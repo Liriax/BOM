@@ -3,8 +3,9 @@ import re
 from pulp import *
 import numpy as np
 
+
 '''recursively returns a list of tuples (node, hierarchy level)
- input t1=root, lst=[(t1,0)], level=0 '''
+input t1=root, lst=[(t1,0)], level=0 '''
 def get_nodes_with_hierachy_level(t1, lst, level):
     if t1.is_leaf():
         return lst
@@ -15,6 +16,7 @@ def get_nodes_with_hierachy_level(t1, lst, level):
 
 
 class TreePair:
+
     '''initialize a TreePair object that consists of 2 trees and generate their matrixes for further comparison'''
     def __init__(self, t1, t2):
         self.t1=t1
@@ -85,13 +87,15 @@ class TreePair:
         nodes2=self.t2_inner_nodes
         same_nodes_t1=[]
         same_nodes_t2=[]
+        same_nodes_t1_t2=[]
         common_node_values=[x for x in list(mat1.values()) if x in list(mat2.values())]
         for common_node_value in common_node_values:
             common_node_t1=list(mat1.keys())[list(mat1.values()).index(common_node_value)]
             common_node_t2=list(mat2.keys())[list(mat2.values()).index(common_node_value)]
-            same_nodes_t1.append(nodes1[common_node_t1-1])
-            same_nodes_t2.append(nodes2[common_node_t2-1])
-        return same_nodes_t1, same_nodes_t2
+            same_nodes_t1.append(nodes1[common_node_t1-1][0])
+            same_nodes_t2.append(nodes2[common_node_t2-1][0])
+            same_nodes_t1_t2.append((nodes1[common_node_t1-1][0], nodes2[common_node_t2-1][0]))
+        return same_nodes_t1, same_nodes_t2, same_nodes_t1_t2
 
     ''' returns (d1, d2), where d1 is the distance between node 1 and node 2 while mat1 is mapped to 
     mat2 and d2 is the distance between node 1 and node 2 while mat2 is mapped to mat1'''
@@ -253,25 +257,44 @@ class TreePair:
             mat_n1=tp.mat1
             mat_n2=tp.mat2
             rf_dist = tp.compute_rf_bom()[0] if not consider_comp_similarity else tp.compute_rf_bom(True, comp_similarity_matrix)[0]
+            n1_name = n1.name
+            n2_name = n2.name
             if rf_dist>=0:
-                nodes_rf_boms[pair]=rf_dist
+                nodes_rf_boms[(n1_name, n2_name)]=rf_dist
 
-        print("Total rf-bom similarity of t1, t2 consider component similarity = {}: ".format(consider_comp_similarity), nodes_rf_boms[(1,1)])
         return nodes_rf_boms
 
 
+class TreeCompare:
+    def __init__(self, t, trees):
+        self.trees = trees
+        self.t = t
 
-
+    def find_same_nodes(self):
+        same_nodes = []
+        for tree in self.trees:
+            tp = TreePair(self.t, tree)
+            same_nodes.append(tp.find_same_nodes()[2])
+        print(same_nodes)
+        return same_nodes
+    def find_similar_nodes(self):
+        similar_nodes = []
+        for tree in self.trees:
+            tp = TreePair(self.t, tree)
+            sim_nodes = tp.find_sim_nodes()
+            similar_nodes.append(sim_nodes)
+        return similar_nodes
 
 # all end-components should be encoded with numbers from 1 to n_components
 
-t1 = Tree('(((1:4,2:4),3:1), (7:1,(4:3,5:1,6:1)));')
-t2 = Tree('(((1:4,2:4),(3:2, 9:1)), ((8:1, 5:1, 6:1), 7:1));')
+t1 = Tree('(((1:4,2:4)a,3:1)b, (7:1,(4:3,5:1,6:1)c)d);', format=1)
+t2 = Tree('(((1:4,2:4)e,(3:2, 9:1)f), ((8:1, 5:1, 6:1)g, 7:1)h);', format=1)
+t3 = Tree('(((1:4,2:4)i,(3:2, 9:1)j), ((4:3, 5:1, 6:1)k, 3:1)l);', format=1)
+s=t1.get_ascii(show_internal=True)
+print(s)
+tp = TreePair(t1,t3)
 
-print (t1, t2)
-tp = TreePair(t1,t2)
-
-tp.find_sim_nodes()
+# tp.find_sim_nodes()
 
 # testing component similarity
 comp_similarity_matrix = [[1.0,0.8,0.7,0.3,0.2,0.5,0.0,0.1, 0],
@@ -285,6 +308,8 @@ comp_similarity_matrix = [[1.0,0.8,0.7,0.3,0.2,0.5,0.0,0.1, 0],
                           [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0, 1]]
 tp.find_sim_nodes(True, comp_similarity_matrix)
 
+tc = TreeCompare(t1, [t2, t3])
+tc.find_same_nodes()
 
 #'''Visualization'''
 # Basic tree style
@@ -306,13 +331,13 @@ for n in t2.traverse():
    n.set_style(nstyle)
 
 
-cm1,cm2=tp.find_same_nodes()
+cm1,cm2, cm12=tp.find_same_nodes()
 #plot the common nodes green
 for l in [cm1, cm2]:
     for node in l:
-        node[0].img_style["size"] = 20
-        node[0].img_style["fgcolor"] = "green"
-        for child in node[0].search_nodes():
+        node.img_style["size"] = 20
+        node.img_style["fgcolor"] = "green"
+        for child in node.search_nodes():
             child.img_style["size"] = 20
             child.img_style["fgcolor"] = "green"
 
