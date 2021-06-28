@@ -1,9 +1,8 @@
 import PyQt5
-from ete3 import Tree, NodeStyle, TreeStyle
+from ete3 import Tree #, NodeStyle, TreeStyle
 import re
 from pulp import *
 import numpy as np
-
 
 '''recursively returns a list of tuples (node, hierarchy level)
 input t1=root, lst=[(t1,0)], level=0 '''
@@ -314,33 +313,33 @@ tc.find_same_nodes()
 
 #'''Visualization'''
 # Basic tree style
-ts = TreeStyle()
-ts.show_leaf_name = True
-ts.show_branch_length = True
+# ts = TreeStyle()
+# ts.show_leaf_name = True
+# ts.show_branch_length = True
 
 # Creates an independent node style for each node, which is
 # initialized with a red foreground color.
-for n in t1.traverse():
-   nstyle = NodeStyle()
-   nstyle["fgcolor"] = "red"
-   nstyle["size"] = 15
-   n.set_style(nstyle)
-for n in t2.traverse():
-   nstyle = NodeStyle()
-   nstyle["fgcolor"] = "red"
-   nstyle["size"] = 15
-   n.set_style(nstyle)
+# for n in t1.traverse():
+#    nstyle = NodeStyle()
+#    nstyle["fgcolor"] = "red"
+#    nstyle["size"] = 15
+#    n.set_style(nstyle)
+# for n in t2.traverse():
+#    nstyle = NodeStyle()
+#    nstyle["fgcolor"] = "red"
+#    nstyle["size"] = 15
+#    n.set_style(nstyle)
 
 
-cm1,cm2, cm12=tp.find_same_nodes()
-#plot the common nodes green
-for l in [cm1, cm2]:
-    for node in l:
-        node.img_style["size"] = 20
-        node.img_style["fgcolor"] = "green"
-        for child in node.search_nodes():
-            child.img_style["size"] = 20
-            child.img_style["fgcolor"] = "green"
+# cm1,cm2, cm12=tp.find_same_nodes()
+# #plot the common nodes green
+# for l in [cm1, cm2]:
+#     for node in l:
+#         node.img_style["size"] = 20
+#         node.img_style["fgcolor"] = "green"
+#         for child in node.search_nodes():
+#             child.img_style["size"] = 20
+#             child.img_style["fgcolor"] = "green"
 
 
 # t1.show(tree_style=ts) # requires PyQt5
