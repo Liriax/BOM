@@ -1,3 +1,4 @@
+import PyQt5
 from ete3 import Tree, NodeStyle, TreeStyle
 import re
 from pulp import *
