@@ -56,12 +56,12 @@ test_tree = Tree()
 first_level_nodes = {}
 second_level_nodes = {}
 
-for i in nodes.index:
-    if int(nodes['stufe'][i]) == 1:
-        print('che guevara')
-        first_level_nodes[nodes['sachnummer'][j], nodes['position']]
+#for i in nodes.index:
+#    if int(nodes['stufe'][i]) == 1:
+#        print('che guevara')
+#        first_level_nodes[nodes['sachnummer'][j], nodes['position']]
 
-for x in first_level_nodes:
-    test_tree.add_child(name=x['sachnummer'])
-#test_tree.add_child(name=row[1])
-print(test_tree)
+#for x in first_level_nodes:
+#    test_tree.add_child(name=x['sachnummer'])
+##test_tree.add_child(name=row[1])
+#print(test_tree)
