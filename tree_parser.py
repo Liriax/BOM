@@ -97,9 +97,8 @@ insert_nodes(r, 1, 0)
 insert_leafs(t)
 print(t)
 
-print(t.write)
 
 pt = PhyloTree(t.write())
 
-print(pt)
+print(pt.write(format = 1))
 
