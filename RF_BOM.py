@@ -44,14 +44,22 @@ class TreePair:
             node_dic={}
             for x in get_nodes_with_hierachy_level(node[0],[],node[1]):
                 if x[0].is_leaf():
-                    node_dic[x[0].name]=(x[1]-node[1],x[0].dist) # (relative hierarchy level, quantity)
+                    rel_hier_level = x[1]-node[1]
+                    quantity = x[0].dist
+                    quantity *= x[0].up.dist if x[0].up != node[0] else 1
+                    node_dic[x[0].name]=(rel_hier_level,quantity) # (relative hierarchy level, quantity)
+
             t1_dic[node[0]]=node_dic
 
+        print (t1_dic)
         for node in self.t2_inner_nodes:
             node_dic={}
             for x in get_nodes_with_hierachy_level(node[0],[],node[1]):
                 if x[0].is_leaf():
-                    node_dic[x[0].name]=(x[1]-node[1],x[0].dist) # (relative hierarchy level, quantity)
+                    rel_hier_level = x[1]-node[1]
+                    quantity = x[0].dist
+                    quantity *= x[0].up.dist if x[0].up != node[0] else 1
+                    node_dic[x[0].name]=(rel_hier_level,quantity) # (relative hierarchy level, quantity)
             t2_dic[node[0]]=node_dic
  
         '''generate the tree matrixes of 2 trees'''
@@ -287,9 +295,9 @@ class TreeCompare:
 
 # all end-components should be encoded with numbers from 1 to n_components
 
-t1 = Tree('(((1:4,2:4)a,3:1)b, (7:1,(4:3,5:1,6:1)c)d);', format=1)
-t2 = Tree('(((1:4,2:4)e,(3:2, 9:1)f), ((8:1, 5:1, 6:1)g, 7:1)h);', format=1)
-t3 = Tree('(((1:4,2:4)i,(3:2, 9:1)j), ((4:3, 5:1, 6:1)k, 3:1)l);', format=1)
+t1 = Tree('(((1:4,2:4)a:2,3:1)b:1, (7:1,(4:3,5:1,6:1)c:1)d:1);', format=1)
+t2 = Tree('(((1:4,2:4)e:1,(3:2, 9:1)f:1), ((8:1, 5:1, 6:1)g:1, 7:1)h:1);', format=1)
+t3 = Tree('(((1:4,2:4)i:1,(3:2, 9:1)j:1), ((4:3, 5:1, 6:1)k:1, 3:1)l:1);', format=1)
 s=t1.get_ascii(show_internal=True)
 print(s)
 tp = TreePair(t1,t3)

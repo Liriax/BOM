@@ -73,7 +73,7 @@ print(leafs)
 def insert_nodes(treenode, currentstufe, index):
     while index < nodes_maxindex:
         if float(nodes['stufe'][index]) == float(currentstufe):
-            nextnode = treenode.add_child(name='BG' + str(index))
+            nextnode = treenode.add_child(name='BG' + str(index),dist=nodes['menge'][index])
             index = index + 1
             if(index == nodes_maxindex):
                 return index
@@ -90,12 +90,13 @@ def insert_leafs(t):
             pos_elternbaugruppe = nodes['position'][int(node.name[2:])]
             for index in leafs.index:
                 if leafs['elternbaugruppe'][index] == sachnummer and leafs['pos_elternbaugruppe'][index] == pos_elternbaugruppe:
-                    node.add_child(name='BT' + str(index))
+                    node.add_child(name='BT' + str(index), dist=leafs['menge'][index])
 
 r = t.add_child(name='root')
 insert_nodes(r, 1, 0)
 insert_leafs(t)
-print(t)
+s=t.get_ascii(show_internal=True)
+print(s)
 
 
 pt = PhyloTree(t.write())
