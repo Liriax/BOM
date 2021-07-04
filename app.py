@@ -10,6 +10,7 @@ from dash.dependencies import Input, Output, State
 
 # import the classes
 from RF_BOM import TreePair, TreeCompare
+from baukastenstuecklisten import formats
 
 # style the app
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -18,9 +19,13 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 server = app.server
 
 tree_inputs=[]
-t1 = Tree('(((1:4,2:4)a,3:1)b, (7:1,(4:3,5:1,6:1)c)d)t1;', format=1)
-t2 = Tree('(((1:4,2:4)e,(3:2, 9:1)f)x, ((8:1, 5:1, 6:1)g, 7:1)h)t2;', format=1)
-t3 = Tree('(((1:4,2:4)i,(3:2, 9:1)j)y, ((4:3, 5:1, 6:1)k, 3:1)l)t3;', format=1)
+# t1 = Tree('(((1:4,2:4)a,3:1)b, (7:1,(4:3,5:1,6:1)c)d)t1;', format=1)
+# t2 = Tree('(((1:4,2:4)e,(3:2, 9:1)f)x, ((8:1, 5:1, 6:1)g, 7:1)h)t2;', format=1)
+# t3 = Tree('(((1:4,2:4)i,(3:2, 9:1)j)y, ((4:3, 5:1, 6:1)k, 3:1)l)t3;', format=1)
+
+t1 = Tree(formats[0], format = 1)
+t2 = Tree(formats[1], format = 1)
+t3 = Tree(formats[2], format = 1)
 
 trees=[t2,t3]
 
@@ -34,12 +39,12 @@ app.layout = html.Div(
             html.H5("Die Produktvarianten als phylogenische Bäume: "),
             html.Div(children=[dcc.Input(
                     id="tree_input",
-                    type="text", value='(((1:4,2:4)a,3:1)b, (7:1,(4:3,5:1,6:1)c)d)t1;'
+                    type="text", value=t1.write(format=1)
                 )]),
             html.Div(children = [
                 html.H5("Andere Bäume: "), 
-                html.P('(((1:4,2:4)e,(3:2, 9:1)f), ((8:1, 5:1, 6:1)g, 7:1)h);'),
-                html.P('(((1:4,2:4)i,(3:2, 9:1)j), ((4:3, 5:1, 6:1)k, 3:1)l);')
+                html.P(t2.write(format=1)),
+                html.P(t3.write(format=1))
                 ]),
             # html.Button(id="add_new_tree_button", n_clicks=None, children="Baum hinzufügen"),
             # html.Div(id="new_trees_div"),

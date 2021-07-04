@@ -1,4 +1,6 @@
 import pandas as pd
+from ete3 import Tree, TreeNode, PhyloTree
+
 xl = pd.read_excel('Baukastenstuecklisten.xlsx', header = None)
 df_left = xl.iloc[:,:6]
 df_right = xl.iloc[:,7:]
@@ -14,11 +16,11 @@ def split_df_by_NaN (df):
         start = NaN_rows[n]+1
         end = NaN_rows[n+1]
         dfs.append(df.iloc[start:end, :])
+    dfs.append(df.iloc[NaN_rows[len(NaN_rows)-1]+1:,:])
     return dfs
 
 left_dfs= split_df_by_NaN(df_left)
 right_dfs=split_df_by_NaN(df_right)
-
 all_dfs = [df.rename(columns=df.iloc[1]).drop(df.index[1]) for df in left_dfs + right_dfs if df.empty == False]
 dic_df = {} 
 for df in all_dfs:
@@ -37,22 +39,56 @@ for g in getriebe:
         variante = [g,m]
         varianten.append(variante)
 
-print(varianten[0])
-print(len(varianten))
-print(dic_df.get('BG 001'))
+# print(varianten[0])
+# print(dic_df)
 
-def df_variante (variante):
-    getriebe = dic_df.get(variante[0])    
-    motor = dic_df.get(variante[1])
-    dic = {}
-    dic['S 001'] = [1, 1, None, 1]
-    dic[variante[0]] = [2, 1, None, 1]
-    dic[variante[1]] = [3, 1, None, 1]
-    p = 4
-    for ind, row in getriebe.iterrows():
-        dic[row["Sachnummer"]] = [p, 2, dic[variante[0]][0],row["Menge "]]
-    df = pd.DataFrame.from_dict(dic, orient = 'index', columns=["Position","stufe","pos_elternbaugruppe","menge"])
 
-    return df
 
-print(df_variante(varianten[0]))
+def add_bgs (bg, dic, p, s, p_elt, m):
+    dic[p] = [bg, s, p_elt, m]
+    if bg[1]=='G':
+        bg_df=dic_df.get(bg) 
+        p_elt = p
+        if bg_df is None:
+            print(bg)
+        for ind, row in bg_df.iterrows():
+            if row["Sachnummer"]==bg:
+                continue
+            p = max(dic.keys())+1
+            dic = add_bgs(row["Sachnummer"], dic, p, s+1, p_elt, row["Menge "])
+    return dic
+
+
+
+def insert_node(df_variante, stufe, eltern, pos_eltern):
+    for pos, row in df_variante[(df_variante["stufe"]==stufe) & (df_variante["pos_eltern"]==pos_eltern)].iterrows():
+        nextnode = eltern.add_child(name=row["sachnummer"], dist = row["menge"])
+        if nextnode.name[1]=='G':
+            insert_node(df_variante, stufe+1, nextnode, pos)
+
+def get_tree_format_string (variante):
+    dic={}
+    dic[1] = ['S 001', 1, 0, 1]
+    zwi_df = add_bgs(variante[0], dic, 2, 1, 0, 1)
+    final_df = add_bgs(variante[1], zwi_df, len(zwi_df)+1, 1, 0, 1)
+    df_variante = pd.DataFrame.from_dict(final_df, orient = "index", columns=["sachnummer","stufe","pos_eltern", "menge"])
+
+    t = Tree(format=1)
+    r = t.add_child(name='root')
+    insert_node(df_variante, 1, r, 0) 
+    leafs = df_variante[(df_variante["stufe"]>2)]
+    nodes = df_variante[(df_variante["stufe"]<=2)]
+
+    s=t.get_ascii(show_internal=True)
+    # print(s)
+    return t.write(format = 1)
+
+formats = []
+# get_tree_format_string(['BG 024', 'BG 010'])
+for v in varianten:
+    try:
+        formats.append(get_tree_format_string(v))
+    except:
+        print("not able to format ", v)
+
+print("successfully formated {} products".format(len(formats)))
