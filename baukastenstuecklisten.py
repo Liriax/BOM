@@ -28,9 +28,10 @@ for df in all_dfs:
 
 getriebesatz = [df.iloc[0,4][-6:] for df in all_dfs if "Getriebesatz" in str(df.iloc[0,2])] #Stufe 2, Kind von Getriebe
 getriebe = [df.iloc[0,4][-6:]  for df in all_dfs if "Getriebe " in df.iloc[0,2]] #Stufe 1
-motor = [df.iloc[0,4][-6:] for df in all_dfs if "motor" in str(df.iloc[0,2])] #Stufe 1
+motor = [df.iloc[0,4][-6:] for df in all_dfs if "Synchronmotor" in str(df.iloc[0,2]) or "Asynschronmotor" in str(df.iloc[0,2])] #Stufe 1
+motor.remove("BG 010")
 geber = [df.iloc[0,4][-6:]  for df in all_dfs if "Geber" in str(df.iloc[0,2])] #Stufe 2, Kind von Motor
-Anschlussstecker_Klemmkasten = [df.iloc[0,4][-6:] for df in all_dfs if "Klemm" in df.iloc[0,2] or "Anschluss" in df.iloc[0,2]] #Stufe 2, Kind von Motor
+# Anschlussstecker_Klemmkasten = [df.iloc[0,4][-6:] for df in all_dfs if "Klemm" in df.iloc[0,2] or "Anschluss" in df.iloc[0,2]] #Stufe 2, Kind von Motor
 flansch_fussgehaeuse = [df.iloc[0,4][-6:]  for df in all_dfs if "flansch" in df.iloc[0,2].lower() or "Fußgehäuse" in df.iloc[0,2]] #Stufe 2, Kind von Getriebe
 # Bauteile, die alle Varianten haben: S 001 auf Stufe 1, 
 varianten = []
@@ -53,6 +54,7 @@ def add_bgs (bg, dic, p, s, p_elt, m):
             print(bg)
         for ind, row in bg_df.iterrows():
             if row["Sachnummer"]==bg:
+                print("error in ", bg)
                 continue
             p = max(dic.keys())+1
             dic = add_bgs(row["Sachnummer"], dic, p, s+1, p_elt, row["Menge "])
@@ -74,7 +76,7 @@ def get_tree_format_string (variante):
     df_variante = pd.DataFrame.from_dict(final_df, orient = "index", columns=["sachnummer","stufe","pos_eltern", "menge"])
 
     t = Tree(format=1)
-    r = t.add_child(name='root')
+    r = t.add_child(name='')
     insert_node(df_variante, 1, r, 0) 
     leafs = df_variante[(df_variante["stufe"]>2)]
     nodes = df_variante[(df_variante["stufe"]<=2)]
@@ -92,3 +94,63 @@ for v in varianten:
         print("not able to format ", v)
 
 print("successfully formated {} products".format(len(formats)))
+
+
+def encode_variante (format_string):
+
+    enc1 = None
+    enc2 = None
+    enc3 = None
+    enc4 = None
+    enc5 = None
+    enc6 = None
+
+    if "BG 006" in format_string:
+        enc1="FU"
+    elif "BG 032" in format_string:
+        enc1="FL"
+    
+    for i in range(1,5):
+        if "BG 00{}".format(i) in format_string:
+            enc2=str(i)
+    
+    if "BT 001" in format_string:
+        enc3="14"
+    elif "BT 002" in format_string:
+        enc3="22"
+
+    if "BT 009" in format_string:
+        enc4="S"
+    elif "BT 017" in format_string:
+        enc4="AS"
+    
+    if "BT 012" in format_string:
+        enc5="A"
+    elif "BT 014" in format_string:
+        enc5="KS"
+    elif "BT 016" in format_string:
+        enc5="KF"
+
+    if "BT 003" in format_string:
+        enc6='1'
+    elif "BT 004" in format_string:
+        enc6='2'
+    elif "BT 018" in format_string:
+        enc6='3'
+    else:
+        enc6='0'
+    
+    try:
+        return enc1+enc2+enc3+enc4+enc5+enc6
+    except:
+        print("not able to encode {}".format(format_string))
+        print(enc1, enc2, enc3, enc4, enc5, enc6)
+        return None
+
+print(encode_variante(formats[10]))  
+
+encodings = []
+for f in formats:
+    encodings.append(encode_variante(f))
+
+print(encodings)

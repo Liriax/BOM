@@ -51,7 +51,6 @@ class TreePair:
 
             t1_dic[node[0]]=node_dic
 
-        print (t1_dic)
         for node in self.t2_inner_nodes:
             node_dic={}
             for x in get_nodes_with_hierachy_level(node[0],[],node[1]):
@@ -254,7 +253,6 @@ class TreePair:
         nodes1=self.t1_inner_nodes
         nodes2=self.t2_inner_nodes
         tree_dist, nmm1, nmm2 = self.compute_rf_bom() if not consider_comp_similarity else self.compute_rf_bom(True, comp_similarity_matrix)
-        
         mapped_nodes = [x for x in nmm1 if (x[1], x[0]) in nmm2]
         # print(mapped_nodes)
         nodes_rf_boms = {}
@@ -267,7 +265,9 @@ class TreePair:
             rf_dist = tp.compute_rf_bom()[0] if not consider_comp_similarity else tp.compute_rf_bom(True, comp_similarity_matrix)[0]
             n1_name = n1.name
             n2_name = n2.name
-            if rf_dist>=0:
+            # print(n1.name, n2.name, rf_dist)
+
+            if rf_dist>=0 and rf_dist<1 and n1_name!='' and n2_name!='':
                 nodes_rf_boms[(n1_name, n2_name)]=rf_dist
 
         return nodes_rf_boms
@@ -292,32 +292,41 @@ class TreeCompare:
             sim_nodes = tp.find_sim_nodes()
             similar_nodes.append(sim_nodes)
         return similar_nodes
+    
+    def find_distances(self):
+        distances = []
+        for tree in self.trees:
+            tp = TreePair(self.t, tree)
+            tree_dist, nmm1, nmm2 = tp.compute_rf_bom()
+            distances.append(tree_dist)
+        return distances
+
 
 # all end-components should be encoded with numbers from 1 to n_components
 
-t1 = Tree('(((1:4,2:4)a:2,3:1)b:1, (7:1,(4:3,5:1,6:1)c:1)d:1);', format=1)
-t2 = Tree('(((1:4,2:4)e:1,(3:2, 9:1)f:1), ((8:1, 5:1, 6:1)g:1, 7:1)h:1);', format=1)
-t3 = Tree('(((1:4,2:4)i:1,(3:2, 9:1)j:1), ((4:3, 5:1, 6:1)k:1, 3:1)l:1);', format=1)
-s=t1.get_ascii(show_internal=True)
-print(s)
-tp = TreePair(t1,t3)
+# t1 = Tree('(((1:4,2:4)a:2,3:1)b:1, (7:1,(4:3,5:1,6:1)c:1)d:1);', format=1)
+# t2 = Tree('(((1:4,2:4)e:1,(3:2, 9:1)f:1), ((8:1, 5:1, 6:1)g:1, 7:1)h:1);', format=1)
+# t3 = Tree('(((1:4,2:4)i:1,(3:2, 9:1)j:1), ((4:3, 5:1, 6:1)k:1, 3:1)l:1);', format=1)
+# s=t1.get_ascii(show_internal=True)
+# print(s)
+# tp = TreePair(t1,t3)
 
-# tp.find_sim_nodes()
+# # tp.find_sim_nodes()
 
-# testing component similarity
-comp_similarity_matrix = [[1.0,0.8,0.7,0.3,0.2,0.5,0.0,0.1, 0],
-                          [0.8,1.0,0.0,0.1,0.3,0.4,0.5,0.0, 0],
-                          [0.7,0.0,1.0,0.0,0.5,0.6,0.8,0.0, 0],
-                          [0.3,0.1,0.0,1.0,0.3,0.4,0.2,0.9, 0],
-                          [0.2,0.3,0.5,0.3,1.0,0.0,0.5,0.6, 0],
-                          [0.5,0.4,0.6,0.4,0.0,1.0,0.5,0.6, 0],
-                          [0.0,0.5,0.8,0.2,0.5,0.5,1.0,0.3, 0],
-                          [0.1,0.0,0.0,0.9,0.6,0.6,0.3,1.0, 0],
-                          [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0, 1]]
-tp.find_sim_nodes(True, comp_similarity_matrix)
+# # testing component similarity
+# comp_similarity_matrix = [[1.0,0.8,0.7,0.3,0.2,0.5,0.0,0.1, 0],
+#                           [0.8,1.0,0.0,0.1,0.3,0.4,0.5,0.0, 0],
+#                           [0.7,0.0,1.0,0.0,0.5,0.6,0.8,0.0, 0],
+#                           [0.3,0.1,0.0,1.0,0.3,0.4,0.2,0.9, 0],
+#                           [0.2,0.3,0.5,0.3,1.0,0.0,0.5,0.6, 0],
+#                           [0.5,0.4,0.6,0.4,0.0,1.0,0.5,0.6, 0],
+#                           [0.0,0.5,0.8,0.2,0.5,0.5,1.0,0.3, 0],
+#                           [0.1,0.0,0.0,0.9,0.6,0.6,0.3,1.0, 0],
+#                           [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0, 1]]
+# tp.find_sim_nodes(True, comp_similarity_matrix)
 
-tc = TreeCompare(t1, [t2, t3])
-tc.find_same_nodes()
+# tc = TreeCompare(t1, [t2, t3])
+# tc.find_same_nodes()
 
 #'''Visualization'''
 # Basic tree style

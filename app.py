@@ -10,7 +10,7 @@ from dash.dependencies import Input, Output, State
 
 # import the classes
 from RF_BOM import TreePair, TreeCompare
-from baukastenstuecklisten import formats
+from baukastenstuecklisten import formats, encode_variante, encodings
 
 # style the app
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -18,33 +18,28 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 server = app.server
 
-tree_inputs=[]
-# t1 = Tree('(((1:4,2:4)a,3:1)b, (7:1,(4:3,5:1,6:1)c)d)t1;', format=1)
-# t2 = Tree('(((1:4,2:4)e,(3:2, 9:1)f)x, ((8:1, 5:1, 6:1)g, 7:1)h)t2;', format=1)
-# t3 = Tree('(((1:4,2:4)i,(3:2, 9:1)j)y, ((4:3, 5:1, 6:1)k, 3:1)l)t3;', format=1)
-
-t1 = Tree(formats[0], format = 1)
-t2 = Tree(formats[1], format = 1)
-t3 = Tree(formats[2], format = 1)
-
-trees=[t2,t3]
+options = []
+for e in encodings:
+    options.append({'label':e, 'value':e})
 
 app.layout = html.Div(
-    style={'display': 'grid', 'grid-template-columns': '1fr 1fr', 'grid-gap': '2vw'},
+    style={'display': 'grid', 'grid-template-columns': '1fr 1fr 1fr 1fr', 'grid-gap': '2vw'},
 
     children=[
     html.Div(
         className="input_div", style={'margin-left': '1vw', 'margin-top': '3vw'},
         children=[
             html.H5("Die Produktvarianten als phylogenische Bäume: "),
-            html.Div(children=[dcc.Input(
+            html.Div(children=[dcc.Dropdown(
                     id="tree_input",
-                    type="text", value=t1.write(format=1)
+                    options=options, value="FU114SA1"
                 )]),
             html.Div(children = [
-                html.H5("Andere Bäume: "), 
-                html.P(t2.write(format=1)),
-                html.P(t3.write(format=1))
+                dcc.Checklist(
+                    id = "trees_cl",
+                    options=options,
+                    value=encodings[1:3]
+                )
                 ]),
             # html.Button(id="add_new_tree_button", n_clicks=None, children="Baum hinzufügen"),
             # html.Div(id="new_trees_div"),
@@ -58,58 +53,69 @@ app.layout = html.Div(
         ]
     ),
     html.Div(
-        className="output_div",
+        className="output_div1",style={'margin-left': '1vw', 'margin-top': '3vw'},
+        children=[
+            html.Div(
+                    id="print_trees_output"
+            ),
+        ]
+    ),
+    html.Div(
+        className="output_div2",style={'margin-left': '1vw', 'margin-top': '3vw'},
         children=[
             html.Div(
                     id="same_nodes_output"
             ),
+        ]
+    ),
+    html.Div(
+        className="output_div3",style={'margin-left': '1vw', 'margin-top': '3vw'},
+        children=[
+            
             html.Div(
                 id="similar_nodes_output"
             )
         ]
+
     )]
 )
-# @app.callback(
-#     Output("new_trees_div","children"),
-#     Input("add_new_tree_button", "n_clicks"),
-# )
-# def add_new_trees (n_clicks):
-#     if n_clicks is not None:
-#         tree_inputs.append(
-#             html.Div(children=[
-#                 dcc.Input(
-#                     id="new_tree_input",
-#                     type="text", value=None
-#                 )
-#             ])
-            
-#         )
-#     return tree_inputs
+@app.callback(
+    Output("print_trees_output","children"),
+    Input("tree_input", "value"),
+    Input("trees_cl","value")
+)
+def print_trees (tree_input, trees_cl):
+    tree = Tree(formats[encodings.index(tree_input)], format=1)
+    tree.get_tree_root().name= tree_input
 
-# @app.callback(
-#     Output("tree_image","src"),
-#     Input("show_tree_button", "n_clicks"),
-#     State("tree_input", "value")
-# )
-# def show_tree (n_clicks, tree_input):
-#     tree = Tree(tree_input, format=1)
-#     if n_clicks is not None:
-#         tree.render("tree1.png", w=60, units="mm")
-#         return app.get_asset_url('tree1.png')
+    output=[]
+    output.append(html.Pre(tree.get_ascii(show_internal=True)))
+    trees=[]
+    for x in trees_cl:
+        t = Tree(formats[encodings.index(x)], format=1)
+        t.get_tree_root().name= x
 
-#     return None
+        trees.append(t)
+        output.append(html.Pre(t.get_ascii(show_internal=True)))
+    
+    return output
 
 @app.callback(
     Output("same_nodes_output","children"),
     Input("identify_same_nodes_button", "n_clicks"),
-    State("tree_input", "value"),
+    Input("tree_input", "value"),
+    Input("trees_cl","value")
 )
-def same_nodes (n_clicks, tree_input):
-    tree = Tree(tree_input, format=1)
+def same_nodes (n_clicks, tree_input, trees_cl):
+    tree = Tree(formats[encodings.index(tree_input)], format=1)
+    tree.get_tree_root().name= tree_input
+
     output=[]
-    output.append(html.Pre(tree.get_ascii(show_internal=True)))
-    for x in trees:
-        output.append(html.Pre(x.get_ascii(show_internal=True)))
+    trees=[]
+    for x in trees_cl:
+        t = Tree(formats[encodings.index(x)], format=1)
+        t.get_tree_root().name= x
+        trees.append(t)
     if n_clicks is not None:
         tc = TreeCompare(tree, trees)
         for t1_tn in tc.find_same_nodes():
@@ -123,14 +129,29 @@ def same_nodes (n_clicks, tree_input):
 @app.callback(
     Output("similar_nodes_output", "children"),
     Input("identify_similar_nodes_button", "n_clicks"),
-    State("tree_input","value")
+    Input("tree_input","value"),
+    Input("trees_cl","value")
+
 )
-def similar_nodes (n_clicks, tree_input):
-    tree = Tree(tree_input, format=1)
+def similar_nodes (n_clicks, tree_input, trees_cl):
+    tree = Tree(formats[encodings.index(tree_input)], format=1)
+    tree.get_tree_root().name= tree_input
     output=[]
+    trees=[]
+    for x in trees_cl:
+        t = Tree(formats[encodings.index(x)], format=1)
+        t.get_tree_root().name= x
+        trees.append(t)
     if n_clicks is not None:
         tc = TreeCompare(tree, trees)
-        output.append(str(tc.find_similar_nodes()))
+        distances = tc.find_distances()
+        for i in range(0, len(trees_cl)):
+            output.append(html.P("Produktvariante {} ist {} ähnlich zu Produktvariante {}.".format(tree_input, round(distances[i],2),trees_cl[i])))
+        sim_nodes_dics = tc.find_similar_nodes()
+        for dic in sim_nodes_dics:
+            for key in dic.keys():
+                if key[1] != trees_cl[sim_nodes_dics.index(dic)]:
+                    output.append(html.P("Baugruppe {} ist {} ähnlich zu Baugruppe {} der Produktvariante {}.".format(key[0],round( dic.get(key),3),key[1], trees_cl[sim_nodes_dics.index(dic)])))
     return output
 # run the app
 if __name__ == '__main__':
