@@ -7,6 +7,7 @@ import dash_html_components as html
 import pandas as pd
 import gunicorn
 from dash.dependencies import Input, Output, State
+import xlsxwriter
 
 # import the classes
 from RF_BOM import TreePair, TreeCompare
@@ -21,6 +22,8 @@ server = app.server
 options = []
 for e in encodings:
     options.append({'label':e, 'value':e})
+
+df_dict = {}
 
 app.layout = html.Div(
     style={'display': 'grid', 'grid-template-columns': '1fr 1fr 1fr 1fr', 'grid-gap': '2vw'},
@@ -48,6 +51,9 @@ app.layout = html.Div(
             html.Br(),
             html.Button(id="identify_same_nodes_button", n_clicks=None, children="Identische Baugruppe identifizieren"),
             html.Button(id="identify_similar_nodes_button", n_clicks=None, children="Ähnliche Baugruppe identifizieren"),
+            html.Button("Ergebnisse Herunterladen", id="download_button"), 
+            dcc.Download(id="download")
+
 
 
         ]
@@ -153,6 +159,20 @@ def similar_nodes (n_clicks, tree_input, trees_cl):
                 if key[1] != trees_cl[sim_nodes_dics.index(dic)]:
                     output.append(html.P("Baugruppe {} ist {} ähnlich zu Baugruppe {} der Produktvariante {}.".format(key[0],round( dic.get(key),3),key[1], trees_cl[sim_nodes_dics.index(dic)])))
     return output
+
+@app.callback(
+    Output("download", "data"),
+    Input("download_button", "n_clicks"),
+    Input("tree_input","value"),
+    prevent_initial_call = True,
+)
+def download_func (n_clicks, tree_input):
+    tree = Tree(formats[encodings.index(tree_input)], format=1)
+    bauteile = [x for x in tree.search_nodes() if x.is_leaf()==True]
+    for i in range(0, len(bauteile)):
+        df_dict[i]=[bauteile[i].name, None, None, None]
+    df = pd.DataFrame.from_dict(df_dict, orient="index", columns=["Bauteil/Baugruppe","identische/ähnliche Bauteil/Baugrupppe","verknüpfte Prozesse", "verknüpfte Ressource"])
+    return dcc.send_data_frame(df.to_excel, "ergebnisse_rf_bom.xlsx", sheet_name = "Ergebnisse")
 # run the app
 if __name__ == '__main__':
     app.run_server(debug=True)
