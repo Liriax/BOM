@@ -285,19 +285,19 @@ class TreeCompare:
             same_nodes.append(tp.find_same_nodes()[2])
         print(same_nodes)
         return same_nodes
-    def find_similar_nodes(self):
+    def find_similar_nodes(self,consider_comp_similarity=False, comp_similarity_matrix = None):
         similar_nodes = []
         for tree in self.trees:
             tp = TreePair(self.t, tree)
-            sim_nodes = tp.find_sim_nodes()
+            sim_nodes = tp.find_sim_nodes(consider_comp_similarity, comp_similarity_matrix)
             similar_nodes.append(sim_nodes)
         return similar_nodes
     
-    def find_distances(self):
+    def find_distances(self,consider_comp_similarity=False, comp_similarity_matrix = None):
         distances = []
         for tree in self.trees:
             tp = TreePair(self.t, tree)
-            tree_dist, nmm1, nmm2 = tp.compute_rf_bom()
+            tree_dist, nmm1, nmm2 = tp.compute_rf_bom(consider_comp_similarity, comp_similarity_matrix)
             distances.append(tree_dist)
         return distances
 

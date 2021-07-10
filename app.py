@@ -12,7 +12,7 @@ import xlsxwriter
 # import the classes
 from RF_BOM import TreePair, TreeCompare
 from baukastenstuecklisten import formats, encode_variante, encodings
-
+from tree_parser import seq_L1, seq_L2, seq_L3, sachn_formenschl, sim_matrix
 # style the app
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 # define the app
@@ -51,6 +51,12 @@ app.layout = html.Div(
             html.Br(),
             html.Button(id="identify_same_nodes_button", n_clicks=None, children="Identische Baugruppe identifizieren"),
             html.Button(id="identify_similar_nodes_button", n_clicks=None, children="Ähnliche Baugruppe identifizieren"),
+            dcc.Checklist(
+                    id = "similarity_cl",
+                    options=[{'label':'Bauteil Ähnlichkeit berücksichtigen','value':"y"}],
+                    value=[]
+            ),
+
             html.Button("Ergebnisse Herunterladen", id="download_button"), 
             dcc.Download(id="download")
 
@@ -136,10 +142,11 @@ def same_nodes (n_clicks, tree_input, trees_cl):
     Output("similar_nodes_output", "children"),
     Input("identify_similar_nodes_button", "n_clicks"),
     Input("tree_input","value"),
-    Input("trees_cl","value")
+    Input("trees_cl","value"),
+    Input("similarity_cl","value"),
 
 )
-def similar_nodes (n_clicks, tree_input, trees_cl):
+def similar_nodes (n_clicks, tree_input, trees_cl, similarity_cl):
     tree = Tree(formats[encodings.index(tree_input)], format=1)
     tree.get_tree_root().name= tree_input
     output=[]
