@@ -37,7 +37,8 @@ for subdir, dirs, files in os.walk(rootdir):
 
         test_df = pandas.concat([test_df_L1.iloc[:,:7], test_df_L2.iloc[:,:7], test_df_L3.iloc[:,:7]], axis=0, ignore_index=True)
         # print(test_df)
-
+        variante_name = test_df.iloc[0,2]
+        print(variante_name)
         nodes = pandas.DataFrame(columns=['sachnummer', 'position', 'pos_eltern', 'stufe', 'menge'])
 
         position = 0

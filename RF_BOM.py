@@ -18,9 +18,10 @@ def get_nodes_with_hierachy_level(t1, lst, level):
 class TreePair:
 
     '''initialize a TreePair object that consists of 2 trees and generate their matrixes for further comparison'''
-    def __init__(self, t1, t2):
+    def __init__(self, t1, t2, sachn_formenschl=None):
         self.t1=t1
         self.t2=t2
+        self.sachn_formenschl = sachn_formenschl
         t1_all_nodes = get_nodes_with_hierachy_level(t1,[(t1,0)],0)
         
         t2_all_nodes = get_nodes_with_hierachy_level(t2,[(t2,0)],0)
@@ -104,9 +105,41 @@ class TreePair:
             same_nodes_t1_t2.append((nodes1[common_node_t1-1][0], nodes2[common_node_t2-1][0]))
         return same_nodes_t1, same_nodes_t2, same_nodes_t1_t2
 
+    def cosine_similarity(self, fm1, fm2):
+        dotprod = 0
+        betrag_x = 0
+        betrag_y = 0
+        for i in range(0,len(fm1)):
+            x=int(fm1[i])
+            y=int(fm2[i])
+            dotprod+=x*y
+            betrag_x+=x*x
+            betrag_y+=y*y
+        return dotprod/((betrag_x*betrag_y)**(1/2.0))
+
+    def construct_sim_matrix(self, sachn_formenschl):
+        if sachn_formenschl is None:
+            return None
+        sim_matrix=[]
+        bt_with_fs = sachn_formenschl.keys()
+        for bt in self.all_comp:
+            lst=[]
+            fs = sachn_formenschl.get(bt)
+            for bt2 in self.all_comp:
+                if bt2 == bt:
+                    lst.append(1)
+                else:
+                    fs2 = sachn_formenschl.get(bt2)
+                    if fs2 is not None and fs is not None:
+                        lst.append(self.cosine_similarity(fs,fs2))
+                    else:
+                        lst.append(0)
+            sim_matrix.append(lst)
+        return sim_matrix
+
     ''' returns (d1, d2), where d1 is the distance between node 1 and node 2 while mat1 is mapped to 
     mat2 and d2 is the distance between node 1 and node 2 while mat2 is mapped to mat1'''
-    def cal_distance (self, node1, node2, consider_comp_similarity=False, comp_similarity_matrix = None):
+    def cal_distance (self, node1, node2, consider_comp_similarity=False, comp_similarity_matrix=None ):
         mat1=self.mat1
         mat2=self.mat2
         t1_inner_nodes = self.t1_inner_nodes
@@ -124,11 +157,11 @@ class TreePair:
         '''if component similarities are to be considered: use another interger programming model to find out
         the optimal component to component matching and substract the total similarities of matched components from 
         the distance between node 1 and node 2 while mat1 is mapped to mat2 only'''
-        if consider_comp_similarity:
+        if consider_comp_similarity and comp_similarity_matrix is not None:
             #	- t12: (4, 4, 1, 0, 0, 0, 0, 0, 0)
 	        #   - t24: (0, 0, 2, 0, 0, 0, 0, 0, 1)
-            t1n=[t1_dic.get(t1_inner_nodes[node1-1][0]).get(x)[1] if x in [x.name for x in t1_inner_nodes[node1-1][0].search_nodes()] else 0 for x in all_comp]
-            t2n=[t2_dic.get(t2_inner_nodes[node2-1][0]).get(x)[1] if x in [x.name for x in t2_inner_nodes[node2-1][0].search_nodes()] else 0 for x in all_comp]
+            t1n=[t1_dic.get(t1_inner_nodes[node1-1][0]).get(x)[1] if x in [y.name for y in t1_inner_nodes[node1-1][0].search_nodes()] else 0 for x in all_comp]
+            t2n=[t2_dic.get(t2_inner_nodes[node2-1][0]).get(x)[1] if x in [y.name for y in t2_inner_nodes[node2-1][0].search_nodes()] else 0 for x in all_comp]
             ind_t1n_diff_t2n = [x for x in range(0, len(t1n)) if t2n[x]<t1n[x]] # indexes of all components in t1n that are not in t2n
             t1n_minus_t2n_positive = [t1n[i]-t2n[i] if t1n[i]>t2n[i] else 0 for i in range(0, len(t1n))] # list of (t1n - t2n)>=0
             ind_t2n_diff_t1n = [x for x in range(0, len(t2n)) if t2n[x]>t1n[x]]
@@ -138,15 +171,15 @@ class TreePair:
             # ind_t2n_diff_t1n: [2, 8]
             # t12-t24: (4, 4, 0, 0, 0, 0, 0, 0, 0)
             # t24-t12: (0, 0, 1, 0, 0, 0, 0, 0, 1)
- 
+            
             prob = LpProblem("the component matching problem", LpMaximize)
             pvar1 = [[LpVariable("t1.replace{}by{}".format(i+1, j+1), 0, None, LpInteger) for j in ind_t2n_diff_t1n ] for i in ind_t1n_diff_t2n]            
 
             prob+= sum([sum([pvar1[ind_t1n_diff_t2n.index(i)][ind_t2n_diff_t1n.index(j)]*comp_similarity_matrix[i][j] for j in ind_t2n_diff_t1n])\
-            /t1_dic.get(self.t1_inner_nodes[node1-1][0]).get(str(i+1))[0] for i in ind_t1n_diff_t2n])
+            /t1_dic.get(self.t1_inner_nodes[node1-1][0]).get(all_comp[i])[0] for i in ind_t1n_diff_t2n])
             
-            constraints_t1 = [pvar1[ind_t1n_diff_t2n.index(i)][ind_t2n_diff_t1n.index(j)] <= min(t2n_minus_t1n_positive[j], t1n_minus_t2n_positive[i]) for j in ind_t2n_diff_t1n for i in ind_t1n_diff_t2n]
-            
+            constraints_t1 = [sum([pvar1[ind_t1n_diff_t2n.index(i)][ind_t2n_diff_t1n.index(j)] for j in ind_t2n_diff_t1n]) <= t1n_minus_t2n_positive[i] for i in ind_t1n_diff_t2n]
+            constraints_t2 = [sum([pvar1[ind_t1n_diff_t2n.index(i)][ind_t2n_diff_t1n.index(j)] for i in ind_t1n_diff_t2n]) <= t2n_minus_t1n_positive[j] for j in ind_t2n_diff_t1n]
  
 
             for cst in constraints_t1:
@@ -154,14 +187,21 @@ class TreePair:
             
 
             prob.solve(solver = PULP_CBC_CMD(msg=0))
-            
+            # print(t1n_minus_t2n_positive, "\n", t2n_minus_t1n_positive)
+            # print(value(prob.objective))
+            # for v in prob.variables():
+            #     print(v.name, "=", v.varValue)
+
             # print(value(prob.objective))
             dist1 -= value(prob.objective) if value(prob.objective) is not None else 0
+            if dist1<0:                
+                print("wrong calculation when considering BT similarity")
+                dist1=0
 
         return round(dist1,2), round(dist2,2)
 
     '''creates distance mapping matrixes as nested lists using cal_distance'''
-    def create_dist_mapping_matrix (self, consider_comp_similarity=False, comp_similarity_matrix = None):
+    def create_dist_mapping_matrix (self, consider_comp_similarity=False ):
         mat1=self.mat1
         mat2=self.mat2
         n_nodes_mat1 = len(mat1)
@@ -170,8 +210,9 @@ class TreePair:
             T12 = [[self.cal_distance(i, j)[0] for j in range(1, n_nodes_mat2+1)] for i in range(1, n_nodes_mat1+1)]
             T21 = [[self.cal_distance(j, i)[1] for j in range(1, n_nodes_mat1+1)] for i in range(1, n_nodes_mat2+1)]
         else:
-            T12 = [[self.cal_distance(i, j, True, comp_similarity_matrix)[0] for j in range(1, n_nodes_mat2+1)] for i in range(1, n_nodes_mat1+1)]
-            T21 = [[self.cal_distance(j, i, True, comp_similarity_matrix)[1] for j in range(1, n_nodes_mat1+1)] for i in range(1, n_nodes_mat2+1)]
+            comp_similarity_matrix = self.construct_sim_matrix(self.sachn_formenschl)
+            T12 = [[self.cal_distance(i, j, True, comp_similarity_matrix )[0] for j in range(1, n_nodes_mat2+1)] for i in range(1, n_nodes_mat1+1)]
+            T21 = [[self.cal_distance(j, i, True, comp_similarity_matrix )[1] for j in range(1, n_nodes_mat1+1)] for i in range(1, n_nodes_mat2+1)]
         
 
         return T12, T21
@@ -179,7 +220,7 @@ class TreePair:
     '''computes the normalizes rf similarity between two tree matrixes using an interger programming model:
         input = the two matrixes obtained from generate_matrixes(t1, t2)
         output: normalized rf metric, values of constraint variables'''  
-    def compute_rf_bom (self, consider_comp_similarity=False, comp_similarity_matrix = None):
+    def compute_rf_bom (self, consider_comp_similarity=False ):
         mat1=self.mat1
         mat2=self.mat2
         n_nodes_mat1 = len(mat1)
@@ -196,7 +237,7 @@ class TreePair:
         if not consider_comp_similarity:
             dm1, dm2 = self.create_dist_mapping_matrix()
         else:
-            dm1, dm2 = self.create_dist_mapping_matrix(True, comp_similarity_matrix)
+            dm1, dm2 = self.create_dist_mapping_matrix(True  )
         
         RF_BOM_max =sum([sum(mat1[i]) for i in range(1, n_nodes_mat1+1)])+sum([sum(mat2[i]) for i in range(1, n_nodes_mat2+1)])
 
@@ -245,24 +286,24 @@ class TreePair:
         return RF_BOM_norm, node_matching_matrix1, node_matching_matrix2
 
     '''returns a dictionary with tuples (i, j) as keys and rf-distance between node i of tree 1 and node j of tree 2 as values'''
-    def find_sim_nodes(self, consider_comp_similarity=False, comp_similarity_matrix = None):
+    def find_sim_nodes(self, consider_comp_similarity=False ):
         t1=self.t1
         t2=self.t2
         mat1=self.mat1
         mat2=self.mat2
         nodes1=self.t1_inner_nodes
         nodes2=self.t2_inner_nodes
-        tree_dist, nmm1, nmm2 = self.compute_rf_bom() if not consider_comp_similarity else self.compute_rf_bom(True, comp_similarity_matrix)
+        tree_dist, nmm1, nmm2 = self.compute_rf_bom() if not consider_comp_similarity else self.compute_rf_bom(True  )
         mapped_nodes = [x for x in nmm1 if (x[1], x[0]) in nmm2]
         # print(mapped_nodes)
         nodes_rf_boms = {}
         for pair in mapped_nodes:
             n1 = nodes1[pair[0]-1][0]
             n2 = nodes2[pair[1]-1][0]
-            tp = TreePair(n1,n2)
+            tp = TreePair(n1,n2, self.sachn_formenschl)
             mat_n1=tp.mat1
             mat_n2=tp.mat2
-            rf_dist = tp.compute_rf_bom()[0] if not consider_comp_similarity else tp.compute_rf_bom(True, comp_similarity_matrix)[0]
+            rf_dist = tp.compute_rf_bom()[0] if not consider_comp_similarity else tp.compute_rf_bom(True  )[0]
             n1_name = n1.name
             n2_name = n2.name
             # print(n1.name, n2.name, rf_dist)
@@ -274,43 +315,44 @@ class TreePair:
 
 
 class TreeCompare:
-    def __init__(self, t, trees):
+    def __init__(self, t, trees, sachn_formenschl=None):
         self.trees = trees
         self.t = t
+        self.sachn_formenschl=sachn_formenschl
 
     def find_same_nodes(self):
         same_nodes = []
         for tree in self.trees:
-            tp = TreePair(self.t, tree)
+            tp = TreePair(self.t, tree, self.sachn_formenschl)
             same_nodes.append(tp.find_same_nodes()[2])
-        print(same_nodes)
         return same_nodes
-    def find_similar_nodes(self,consider_comp_similarity=False, comp_similarity_matrix = None):
+    def find_similar_nodes(self,consider_comp_similarity=False ):
         similar_nodes = []
         for tree in self.trees:
-            tp = TreePair(self.t, tree)
-            sim_nodes = tp.find_sim_nodes(consider_comp_similarity, comp_similarity_matrix)
+            tp = TreePair(self.t, tree, self.sachn_formenschl)
+            sim_nodes = tp.find_sim_nodes(consider_comp_similarity  )
             similar_nodes.append(sim_nodes)
         return similar_nodes
     
-    def find_distances(self,consider_comp_similarity=False, comp_similarity_matrix = None):
+    def find_distances(self,consider_comp_similarity=False ):
         distances = []
         for tree in self.trees:
-            tp = TreePair(self.t, tree)
-            tree_dist, nmm1, nmm2 = tp.compute_rf_bom(consider_comp_similarity, comp_similarity_matrix)
+            tp = TreePair(self.t, tree, self.sachn_formenschl)
+            tree_dist, nmm1, nmm2 = tp.compute_rf_bom(consider_comp_similarity  )
             distances.append(tree_dist)
         return distances
 
 
-# all end-components should be encoded with numbers from 1 to n_components
 
-# t1 = Tree('(((1:4,2:4)a:2,3:1)b:1, (7:1,(4:3,5:1,6:1)c:1)d:1);', format=1)
-# t2 = Tree('(((1:4,2:4)e:1,(3:2, 9:1)f:1), ((8:1, 5:1, 6:1)g:1, 7:1)h:1);', format=1)
-# t3 = Tree('(((1:4,2:4)i:1,(3:2, 9:1)j:1), ((4:3, 5:1, 6:1)k:1, 3:1)l:1);', format=1)
+sachn_formenschl = {'BT 011': '23355', 'S 003': '14111', 'S 001': '14111', 'BT 014': '21131', 'S 002': '15131', 'BT 017': '12140', 'BT 015': '12140', 'BT 018': '11132', 'BT 001': '12140', 'BT T18': '11132', 'BT 002': '12140', 'BT 013': '23255', 'BT 019': '11322', 'BT 005': '11111', 'BT 016': '12140', 'BT 006': '11111', 'BT 007': '11111', 'BT 008': '11111'}
+t1 = Tree('((S 001:1,((BT 010:1,BT 011:1,S 002:8)BG 006:1,(BT 005:1,S 001:2)BG 001:1,BT 001:1)BG 011:1,((BT 009:1,S 003:2)BG 010:1,(BT 012:1,S 001:4)BG 007:1,BT 003:1)BG 008:1):1);', format=1)
+t2 = Tree('((S 001:1,((BT 010:1,BT 011:1,S 002:8)BG 006:1,(BT 005:1,S 001:2)BG 001:1,BT 001:1)BG 011:1,((BT 009:1,S 003:2)BG 010:1,(BT 012:1,S 001:4)BG 007:1,(BT 004:1,S 001:3)BG 005:1)BG 009:1):1);', format=1)
+t3 = Tree('(((1:4,2:4)i:1,(3:2, 9:1)j:1), ((4:3, 5:1, 6:1)k:1, 3:1)l:1);', format=1)
 # s=t1.get_ascii(show_internal=True)
 # print(s)
-# tp = TreePair(t1,t3)
-
+tp = TreePair(t1,t2, sachn_formenschl)
+print(tp.compute_rf_bom())
+print(tp.compute_rf_bom(True))
 # # tp.find_sim_nodes()
 
 # # testing component similarity
@@ -323,11 +365,10 @@ class TreeCompare:
 #                           [0.0,0.5,0.8,0.2,0.5,0.5,1.0,0.3, 0],
 #                           [0.1,0.0,0.0,0.9,0.6,0.6,0.3,1.0, 0],
 #                           [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0, 1]]
-# tp.find_sim_nodes(True, comp_similarity_matrix)
+# tp.find_sim_nodes(True  )
 
-# tc = TreeCompare(t1, [t2, t3])
-# tc.find_same_nodes()
-
+# tc = TreeCompare(t1, [t2, t3], sachn_formenschl)
+# print(tc.find_similar_nodes(True))
 #'''Visualization'''
 # Basic tree style
 # ts = TreeStyle()

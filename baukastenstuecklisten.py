@@ -147,10 +147,10 @@ def encode_variante (format_string):
         print(enc1, enc2, enc3, enc4, enc5, enc6)
         return None
 
-print(encode_variante(formats[10]))  
-
+# print(encode_variante(formats[10]))  
+print(formats[0], "\n", formats[1])
 encodings = []
 for f in formats:
     encodings.append(encode_variante(f))
 
-print(encodings)
+# print(encodings)
