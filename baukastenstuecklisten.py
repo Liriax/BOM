@@ -93,7 +93,7 @@ for v in varianten:
     except:
         print("not able to format ", v)
 
-print("successfully formated {} products".format(len(formats)))
+# print("successfully formated {} products".format(len(formats)))
 
 
 def encode_variante (format_string):
@@ -148,7 +148,7 @@ def encode_variante (format_string):
         return None
 
 # print(encode_variante(formats[10]))  
-print(formats[2])
+# print(formats[2])
 encodings = []
 for f in formats:
     encodings.append(encode_variante(f))

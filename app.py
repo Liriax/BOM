@@ -12,7 +12,7 @@ import xlsxwriter
 # import the classes
 from RF_BOM import TreePair, TreeCompare
 from baukastenstuecklisten import formats, encode_variante, encodings
-from tree_parser import seq_L1, seq_L2, seq_L3, sachn_formenschl
+from tree_parser import seq_L1, seq_L2, seq_L3, sachn_formenschl, find_process
 
 # style the app
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -24,7 +24,6 @@ options = []
 for e in encodings:
     options.append({'label':e, 'value':e})
 
-df_dict = {}
 
 app.layout = html.Div(
     style={'display': 'grid', 'grid-template-columns': '1fr 1fr 1fr 1fr', 'grid-gap': '2vw'},
@@ -60,7 +59,7 @@ app.layout = html.Div(
                     value=[]
             ),
 
-            html.Button("Ergebnisse Herunterladen", id="download_button"), 
+            html.Button("Ergebnisse Herunterladen", id="download_button", n_clicks=None), 
             dcc.Download(id="download")
 
 
@@ -181,11 +180,13 @@ def similar_nodes (n_clicks, tree_input, trees_cl, similarity_cl):
     Input("download_button", "n_clicks"),
     Input("tree_input","value"),
     Input("trees_cl","value"),
+    Input("similarity_cl","value"),
     prevent_initial_call = True,
 )
-def download_func (n_clicks, tree_input, trees_cl):
+def download_func (n_clicks, tree_input, trees_cl,similarity_cl):
+    consider_comp_similarity=True if similarity_cl==['y'] else False
+    df_lst=[]
     if n_clicks!=None:
-        consider_comp_similarity = False
         tree = Tree(formats[encodings.index(tree_input)], format=1)
         tree.get_tree_root().name = tree_input
         output=[]
@@ -194,27 +195,45 @@ def download_func (n_clicks, tree_input, trees_cl):
             t = Tree(formats[encodings.index(x)], format=1)
             t.get_tree_root().name = x
             trees.append(t)
-        if n_clicks is not None:
             tc = TreeCompare(tree, trees, sachn_formenschl)
             same_nodes_dict = tc.find_same_nodes()
+            same_nodes=[]
+            all_n = tree.search_nodes()
             for t1_tn in same_nodes_dict:
                 for node_pair in t1_tn:
                     node_t1 = node_pair[0]
                     node_tn = node_pair[1]
-                    df_dict[node_t1.name]=["identisch zu " + node_tn.name + " von "+  trees_cl[same_nodes_dict.index(t1_tn)], None, None]
+                    same_nodes.append(node_t1)
+            
+            for nd in list(set(same_nodes)):
+                children_nodes = nd.search_nodes()
+                for cn in children_nodes:
+                    if nd.name != cn.name:
+                        df_lst.append([nd.name, cn.name, "identisch", find_process([nd.name, cn.name])])
+                all_n.remove(nd)
+
+            # print(all_n)
             distances = tc.find_distances(consider_comp_similarity)
             sim_nodes_dics = tc.find_similar_nodes(consider_comp_similarity)
             for dic in sim_nodes_dics:
                 for key in dic.keys():
                     if key[1] != trees_cl[sim_nodes_dics.index(dic)]:
-                        df_dict[key[0]]=[str(round( dic.get(key),3))+" ähnlich zu "+ key[1]+" von " + trees_cl[sim_nodes_dics.index(dic)], None, None]
-                            
-        # bauteile = [x for x in tree.search_nodes() if x.is_leaf()==True]
-        # for i in range(0, len(bauteile)):
-        #     df_dict[i]=[bauteile[i].name, None, None, None]
-        df = pd.DataFrame.from_dict(df_dict, orient="index", columns=["identische/ähnliche Bauteil/Baugrupppe","verknüpfte Prozesse", "verknüpfte Ressource"])
+                        nd = tree.search_nodes(name=key[0])[0]
+                        if nd == tree:
+                            continue
+                        children_nodes = nd.search_nodes()
+                        for cn in children_nodes:
+                            if nd.name != cn.name and nd in all_n:
+                                df_lst.append([nd.name, cn.name, str(round( dic.get(key),3))+" ähnlich zu "+ key[1]+" von " + trees_cl[sim_nodes_dics.index(dic)], find_process([nd.name, cn.name])])
+                                all_n.remove(nd)
+       
+      
+        df = pd.DataFrame(df_lst, index = range(0, len(df_lst)), columns=["Baugrupppe","Bauteil","identisch/Ähnlichkeit","verknüpfte Prozesse [Station 1, Station 2, Station 3]"])
+        # print(df.iloc[:,2:4])
+
         return dcc.send_data_frame(df.to_excel, "ergebnisse_rf_bom.xlsx", sheet_name = "Ergebnisse")
     return None
+
 
 
 

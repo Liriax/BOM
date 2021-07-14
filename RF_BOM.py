@@ -379,7 +379,7 @@ class TreePair:
                 nodes_rf_boms[(n1_name, n2_name)]=rf_dist
         
 
-        return nodes_rf_boms
+        return dict(sorted(nodes_rf_boms.items(), key=lambda item: item[1] , reverse=True))
 
 
 class TreeCompare:
