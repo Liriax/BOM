@@ -1,4 +1,4 @@
-from ete3 import Tree, NodeStyle, TreeStyle, PhyloTree, PhyloNode
+from ete3 import Tree
 import openpyxl
 import pandas
 import os
@@ -103,15 +103,7 @@ for subdir, dirs, files in os.walk(rootdir):
 # print(seq_L3)
 # print(sachn_formenschl)
 
-sim_matrix=[]
-for bt in sachn_formenschl.keys():
-    lst=[]
-    fs = sachn_formenschl.get(bt)
-    for bt2 in sachn_formenschl.keys():
-        fs2 = sachn_formenschl.get(bt2)
-        lst.append(cosine_similarity(fs,fs2))
-    sim_matrix.append(lst)
-# print(sim_matrix)
+sachn_formenschl.pop("BT T18", None)
 
 
 

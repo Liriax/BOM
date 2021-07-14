@@ -1,5 +1,5 @@
 import pandas as pd
-from ete3 import Tree, TreeNode, PhyloTree
+from ete3 import Tree, TreeNode
 
 xl = pd.read_excel('Baukastenstuecklisten.xlsx', header = None)
 df_left = xl.iloc[:,:6]
@@ -148,7 +148,7 @@ def encode_variante (format_string):
         return None
 
 # print(encode_variante(formats[10]))  
-print(formats[0], "\n", formats[1])
+print(formats[2])
 encodings = []
 for f in formats:
     encodings.append(encode_variante(f))
