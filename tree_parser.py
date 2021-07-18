@@ -3,6 +3,8 @@ import openpyxl
 import pandas
 import os
 
+'''this programm extracts the processes' sequence number for each corresponding Baugruppe and Bauteile, for each station'''
+'''it also extracts all the Bauteil - Formenschlüssel pairs'''
 
 def extract_sequences(df, lst):
     if len(df.columns)<17:
@@ -22,22 +24,8 @@ def extract_sequences(df, lst):
     for d in dats:
         sachnummer_lst = [x for x in d.iloc[:,5] if x is not None]
         seq = [x for x in d.iloc[:,7][d.iloc[:,7].notnull()]]
-        # print(sachnummer_lst)
-        # print(seq)
         lst.append((sachnummer_lst, seq))
         
-            
-def cosine_similarity(fm1, fm2):
-    dotprod = 0
-    betrag_x = 0
-    betrag_y = 0
-    for i in range(0,len(fm1)):
-        x=int(fm1[i])
-        y=int(fm2[i])
-        dotprod+=x*y
-        betrag_x+=x*x
-        betrag_y+=y*y
-    return dotprod/((betrag_x*betrag_y)**(1/2.0))
 
 def split_df_by_NaN (df):
     is_NaN = df.isnull()
@@ -78,53 +66,17 @@ for subdir, dirs, files in os.walk(rootdir):
 
             if "BG" in sachnummer:
                 sachnummer = "BG "+sachnummer[-3:]
-                # stufe = int(test_df['Unnamed: 1'][i])
-
-                # elternbaugruppe = sachnummer
-                # node_is_new = True
-                # for j in nodes.index:
-                #     if sachnummer == nodes['sachnummer'][j] and stufe == nodes['stufe'][j]:
-                #         node_is_new = False
-
-                # if node_is_new:
-                #     position+=1
-                #     if stufe==1:
-                #         pos_eltern=0
-                #     else:
-                #         pos_eltern=last_position
-                #     new_node = {'sachnummer': sachnummer, 'position': position, 'pos_eltern': pos_eltern,'stufe': stufe, 'menge': menge}
-                #     nodes = nodes.append(new_node, ignore_index=True)
-                #     last_position=position
-
 
             elif 'BT' in sachnummer or ('S' in sachnummer and sachnummer != 'Sachnummer'):
                 sachnummer = "BT "+sachnummer[-3:] if "BT" in sachnummer else "S "+sachnummer[-3:]
-
-                # stufe = int(test_df.iloc[i,1])
-
                 formenschluessel = str(test_df.iloc[i,6])
-                # pos_eltern=last_position
                 if formenschluessel is not None:
                     sachn_formenschl[sachnummer]=formenschluessel
-
-                # leaf_is_new = True
-                # for j in nodes.index:
-                #     if sachnummer == nodes['sachnummer'][j]  \
-                #             and pos_eltern == nodes['pos_eltern'][j]:
-                #         leaf_is_new = False
-
-                # if leaf_is_new:
-                #     position+=1
-                #     new_leaf = {'sachnummer': sachnummer, 'position':position, 'pos_eltern': pos_eltern, 'stufe': stufe, 'menge': menge}
-                #     nodes = nodes.append(new_leaf, ignore_index=True)
-        
+   
         extract_sequences(test_df_L1,seq_L1)
         extract_sequences(test_df_L2,seq_L2)
         extract_sequences(test_df_L3,seq_L3)
 
-print(len(seq_L1))
-print(len(seq_L2))
-print(len(seq_L3))
 
 sachn_formenschl.pop("BT T18", None)
 

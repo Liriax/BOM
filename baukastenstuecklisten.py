@@ -1,6 +1,9 @@
 import pandas as pd
 from ete3 import Tree, TreeNode
 
+'''This programm computes the BoMs of all product variances from Baukastenstücklisten, turn them into newick format, and computes their encodings'''
+
+
 xl = pd.read_excel('Baukastenstuecklisten.xlsx', header = None)
 df_left = xl.iloc[:,:6]
 df_right = xl.iloc[:,7:]
@@ -33,18 +36,15 @@ motor.remove("BG 010")
 geber = [df.iloc[0,4][-6:]  for df in all_dfs if "Geber" in str(df.iloc[0,2])] #Stufe 2, Kind von Motor
 # Anschlussstecker_Klemmkasten = [df.iloc[0,4][-6:] for df in all_dfs if "Klemm" in df.iloc[0,2] or "Anschluss" in df.iloc[0,2]] #Stufe 2, Kind von Motor
 flansch_fussgehaeuse = [df.iloc[0,4][-6:]  for df in all_dfs if "flansch" in df.iloc[0,2].lower() or "Fußgehäuse" in df.iloc[0,2]] #Stufe 2, Kind von Getriebe
-# Bauteile, die alle Varianten haben: S 001 auf Stufe 1, 
+# Bauteile, die alle Varianten haben: S 001 auf Stufe 1
 varianten = []
 for g in getriebe:
     for m in motor:
         variante = [g,m]
         varianten.append(variante)
 
-# print(varianten[0])
-# print(dic_df)
 
-
-
+'''add Baugruppe (bg) to the dataframe recursively'''
 def add_bgs (bg, dic, p, s, p_elt, m):
     dic[p] = [bg, s, p_elt, m]
     if bg[1]=='G':
@@ -60,14 +60,13 @@ def add_bgs (bg, dic, p, s, p_elt, m):
             dic = add_bgs(row["Sachnummer"], dic, p, s+1, p_elt, row["Menge "])
     return dic
 
-
-
 def insert_node(df_variante, stufe, eltern, pos_eltern):
     for pos, row in df_variante[(df_variante["stufe"]==stufe) & (df_variante["pos_eltern"]==pos_eltern)].iterrows():
         nextnode = eltern.add_child(name=row["sachnummer"], dist = row["menge"])
         if nextnode.name[1]=='G':
             insert_node(df_variante, stufe+1, nextnode, pos)
 
+'''returns the newick format of a variance's BoM'''
 def get_tree_format_string (variante):
     dic={}
     dic[1] = ['S 001', 1, 0, 1]
@@ -86,7 +85,6 @@ def get_tree_format_string (variante):
     return t.write(format = 1)
 
 formats = []
-# get_tree_format_string(['BG 024', 'BG 010'])
 for v in varianten:
     try:
         formats.append(get_tree_format_string(v))
@@ -95,7 +93,7 @@ for v in varianten:
 
 # print("successfully formated {} products".format(len(formats)))
 
-
+'''returns name of the variance given the newick format of its BoM'''
 def encode_variante (format_string):
 
     enc1 = None
