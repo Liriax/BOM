@@ -209,6 +209,7 @@ def download_func (n_clicks, tree_input, trees_cl,similarity_cl):
         for np in list(set(same_nodes)):
             nd=np[0]
             nc=np[1]
+
             children_nodes = nd.children
             for cn in children_nodes:
                 if nd.name != cn.name:
