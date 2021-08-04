@@ -203,14 +203,16 @@ def download_func (n_clicks, tree_input, trees_cl,similarity_cl):
             for node_pair in t1_tn:
                 node_t1 = node_pair[0]
                 node_tn = node_pair[1]
-                same_nodes.append(node_t1)
+                same_nodes.append(node_pair)
         
         # first for all the nodes that have identical nodes from other trees:
-        for nd in list(set(same_nodes)):
-            children_nodes = nd.search_nodes()
+        for np in list(set(same_nodes)):
+            nd=np[0]
+            nc=np[1]
+            children_nodes = nd.children
             for cn in children_nodes:
                 if nd.name != cn.name:
-                    df_lst.append([nd.name, cn.name, "identisch", find_process([nd.name, cn.name])])
+                    df_lst.append([nd.name, cn.name, "identisch zu {} von {}".format(nc.name, nc.get_tree_root().name), find_process([nd.name, cn.name])])
             already_found.append(nd.name)
 
 
@@ -225,20 +227,20 @@ def download_func (n_clicks, tree_input, trees_cl,similarity_cl):
                     nd = tree.search_nodes(name=key[0])[0]
                     if nd == tree:
                         continue
-                    children_nodes = nd.search_nodes()
-                    other_children = [x.name for x in trees[sim_nodes_dics.index(dic)].search_nodes(name=key[1])[0].search_nodes()]
+                    children_nodes = nd.children
+                    other_children = [x.name for x in trees[sim_nodes_dics.index(dic)].search_nodes(name=key[1])[0].children]
                     for cn in children_nodes:
                         if key[0] in already_found:
                             continue
                         if cn.name in other_children:
-                            df_lst.append([nd.name, cn.name, "existiert identische Bauteile von der ähnlichen Baugruppe "+ key[1]+" von " + trees_cl[sim_nodes_dics.index(dic)], find_process([nd.name, cn.name])])
+                            df_lst.append([nd.name, cn.name, "identisch zur ähnlichen "+ key[1]+" von " + trees_cl[sim_nodes_dics.index(dic)], find_process([nd.name, cn.name])])
 
                         elif nd.name != cn.name:
-                            df_lst.append([nd.name, cn.name, "neues Bauteil, " + str(round( dic.get(key),3))+" ähnlich zu "+ key[1]+" von " + trees_cl[sim_nodes_dics.index(dic)], find_process([nd.name, cn.name])])
+                            df_lst.append([nd.name, cn.name, "neue zu " + str(round( dic.get(key),3))+" ähnlich zu "+ key[1]+" von " + trees_cl[sim_nodes_dics.index(dic)], find_process([nd.name, cn.name])])
                     already_found.append(key[0])
     
       
-        df = pd.DataFrame(df_lst, index = range(0, len(df_lst)), columns=["Baugrupppe","Bauteil","identisch/Ähnlichkeit","verknüpfte Prozesse [Station 1, Station 2, Station 3]"])
+        df = pd.DataFrame(df_lst, index = range(0, len(df_lst)), columns=["Baugrupppe","Kinder","identisch/Ähnlichkeit","verknüpfte Prozesse [Station 1, Station 2, Station 3]"])
 
         return dcc.send_data_frame(df.to_excel, "ergebnisse_rf_bom.xlsx", sheet_name = "Ergebnisse")
     return None
