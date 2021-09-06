@@ -31,12 +31,14 @@ for df in all_dfs:
 
 getriebesatz = [df.iloc[0,4][-6:] for df in all_dfs if "Getriebesatz" in str(df.iloc[0,2])] #Stufe 2, Kind von Getriebe
 getriebe = [df.iloc[0,4][-6:]  for df in all_dfs if "Getriebe " in df.iloc[0,2]] #Stufe 1
-motor = [df.iloc[0,4][-6:] for df in all_dfs if "Synchronmotor" in str(df.iloc[0,2]) or "Asynschronmotor" in str(df.iloc[0,2])] #Stufe 1
-motor.remove("BG 010")
+motor = [df.iloc[0,4][-6:] for df in all_dfs if "Synchronmotor" in str(df.iloc[0,2]) or "Asynchronmotor" in str(df.iloc[0,2])] #Stufe 1
+motor.remove("BG 010") # because BG 010 is a child of Synchronmotors
 geber = [df.iloc[0,4][-6:]  for df in all_dfs if "Geber" in str(df.iloc[0,2])] #Stufe 2, Kind von Motor
-# Anschlussstecker_Klemmkasten = [df.iloc[0,4][-6:] for df in all_dfs if "Klemm" in df.iloc[0,2] or "Anschluss" in df.iloc[0,2]] #Stufe 2, Kind von Motor
+Anschlussstecker_Klemmkasten = [df.iloc[0,4][-6:] for df in all_dfs if "Klemm" in df.iloc[0,2] or "Anschluss" in df.iloc[0,2]] #Stufe 2, Kind von Motor
 flansch_fussgehaeuse = [df.iloc[0,4][-6:]  for df in all_dfs if "flansch" in df.iloc[0,2].lower() or "Fußgehäuse" in df.iloc[0,2]] #Stufe 2, Kind von Getriebe
+
 # Bauteile, die alle Varianten haben: S 001 auf Stufe 1
+
 varianten = []
 for g in getriebe:
     for m in motor:
@@ -141,14 +143,14 @@ def encode_variante (format_string):
     try:
         return enc1+enc2+enc3+enc4+enc5+enc6
     except:
-        print("not able to encode {}".format(format_string))
-        print(enc1, enc2, enc3, enc4, enc5, enc6)
+        # print("not able to encode {}".format(format_string))
+        # print(enc1, enc2, enc3, enc4, enc5, enc6)
         return None
 
-# print(encode_variante(formats[10]))  
-# print(formats[2])
+
 encodings = []
 for f in formats:
-    encodings.append(encode_variante(f))
+    if encode_variante(f) is not None:
+        encodings.append(encode_variante(f))
 
 # print(encodings)

@@ -7,9 +7,6 @@ import os
 '''it also extracts all the Bauteil - Formenschlüssel pairs'''
 
 def extract_sequences(df, lst):
-    if len(df.columns)<17:
-        print("error reading excel file")
-        return
     is_NaN = df.iloc[:,:7].isnull()
     row_all_NaN = is_NaN.all(axis=1)
     NaN_rows = df[row_all_NaN].index.tolist()
@@ -50,9 +47,9 @@ seq_L3=[]
 
 for subdir, dirs, files in os.walk(rootdir):
     if len(files)>0:
-        test_df_L1=pandas.read_excel(os.path.join(subdir,files[0]))
-        test_df_L2=pandas.read_excel(os.path.join(subdir,files[1]))
-        test_df_L3=pandas.read_excel(os.path.join(subdir,files[2]))
+        test_df_L1=pandas.read_excel(os.path.join(subdir,files[0]),header=None,index_col=None)
+        test_df_L2=pandas.read_excel(os.path.join(subdir,files[1]),header=None,index_col=None)
+        test_df_L3=pandas.read_excel(os.path.join(subdir,files[2]),header=None,index_col=None)
 
         test_df = pandas.concat([test_df_L1.iloc[:,:7], test_df_L2.iloc[:,:7], test_df_L3.iloc[:,:7]], axis=0, ignore_index=True)
         nodes = pandas.DataFrame(columns=['sachnummer', 'position', 'pos_eltern', 'stufe', 'menge'])
@@ -73,9 +70,14 @@ for subdir, dirs, files in os.walk(rootdir):
                 if formenschluessel is not None:
                     sachn_formenschl[sachnummer]=formenschluessel
    
-        extract_sequences(test_df_L1,seq_L1)
-        extract_sequences(test_df_L2,seq_L2)
-        extract_sequences(test_df_L3,seq_L3)
+        if len(test_df_L1.columns)>=17:
+            extract_sequences(test_df_L1,seq_L1)
+            
+        if len(test_df_L2.columns)>=17:
+            extract_sequences(test_df_L2,seq_L2)
+           
+        if len(test_df_L3.columns)>=17:
+            extract_sequences(test_df_L3,seq_L3)
 
 
 sachn_formenschl.pop("BT T18", None)

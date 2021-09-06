@@ -7,7 +7,6 @@ import dash_html_components as html
 import pandas as pd
 import gunicorn
 from dash.dependencies import Input, Output, State
-import xlsxwriter
 
 # import the classes
 from RF_BOM import TreePair, TreeCompare
@@ -32,7 +31,7 @@ app.layout = html.Div(
     html.Div(
         className="input_div", style={'margin-left': '1vw', 'margin-top': '3vw'},
         children=[
-            html.H5("Die Produktvarianten als phylogenische Bäume: "),
+            html.H5("Die Produktvarianten als phylogenetische Bäume: "),
             html.Div(children=[dcc.Dropdown(
                     id="tree_input",
                     options=options, value="FU114SA1"
@@ -207,13 +206,13 @@ def download_func (n_clicks, tree_input, trees_cl,similarity_cl):
         
         # first for all the nodes that have identical nodes from other trees:
         for np in list(set(same_nodes)):
-            nd=np[0]
-            nc=np[1]
+            nd=np[0] # the new node
+            nc=np[1] # the identical node
 
             children_nodes = nd.children
-            for cn in children_nodes:
-                if nd.name != cn.name:
-                    df_lst.append([nd.name, cn.name, "identisch zu {} von {}".format(nc.name, nc.get_tree_root().name), find_process([nd.name, cn.name])])
+            for child in children_nodes:
+                if nd.name != child.name: 
+                    df_lst.append([nd.name, child.name, "identisch zu {} von {}".format(nc.name, nc.get_tree_root().name), find_process([nc.name, child.name])])
             already_found.append(nd.name)
 
 
@@ -230,14 +229,14 @@ def download_func (n_clicks, tree_input, trees_cl,similarity_cl):
                         continue
                     children_nodes = nd.children
                     other_children = [x.name for x in trees[sim_nodes_dics.index(dic)].search_nodes(name=key[1])[0].children]
-                    for cn in children_nodes:
+                    for child in children_nodes:
                         if key[0] in already_found:
                             continue
-                        if cn.name in other_children:
-                            df_lst.append([nd.name, cn.name, "identisch zur ähnlichen "+ key[1]+" von " + trees_cl[sim_nodes_dics.index(dic)], find_process([nd.name, cn.name])])
+                        if child.name in other_children:
+                            df_lst.append([nd.name, child.name, "identisch zur ähnlichen "+ key[1]+" von " + trees_cl[sim_nodes_dics.index(dic)], find_process([key[1], child.name])])
 
-                        elif nd.name != cn.name:
-                            df_lst.append([nd.name, cn.name, "neue zu " + str(round( dic.get(key),3))+" ähnlich zu "+ key[1]+" von " + trees_cl[sim_nodes_dics.index(dic)], find_process([nd.name, cn.name])])
+                        elif nd.name != child.name:
+                            df_lst.append([nd.name, child.name, "neue zu " + str(round( dic.get(key),3))+" ähnlich zu "+ key[1]+" von " + trees_cl[sim_nodes_dics.index(dic)], find_process([key[1], child.name])])
                     already_found.append(key[0])
     
       
