@@ -211,6 +211,8 @@ def download_func (n_clicks, tree_input, trees_cl,similarity_cl):
 
             children_nodes = nd.children
             for child in children_nodes:
+                if nd == tree or nd.name=='':
+                    continue
                 if nd.name != child.name: 
                     df_lst.append([nd.name, child.name, "identisch zu {} von {}".format(nc.name, nc.get_tree_root().name), find_process([nc.name, child.name])])
             already_found.append(nd.name)
@@ -225,7 +227,7 @@ def download_func (n_clicks, tree_input, trees_cl,similarity_cl):
                 # key[1] is the name of the similar node
                 if key[1] != trees_cl[sim_nodes_dics.index(dic)]:
                     nd = tree.search_nodes(name=key[0])[0]
-                    if nd == tree:
+                    if nd == tree or key[0]=='':
                         continue
                     children_nodes = nd.children
                     other_children = [x.name for x in trees[sim_nodes_dics.index(dic)].search_nodes(name=key[1])[0].children]
@@ -233,10 +235,10 @@ def download_func (n_clicks, tree_input, trees_cl,similarity_cl):
                         if key[0] in already_found:
                             continue
                         if child.name in other_children:
-                            df_lst.append([nd.name, child.name, "identisch zur ähnlichen "+ key[1]+" von " + trees_cl[sim_nodes_dics.index(dic)], find_process([key[1], child.name])])
+                            df_lst.append([key[0], child.name, "identisch zur ähnlichen "+ key[1]+" von " + trees_cl[sim_nodes_dics.index(dic)], find_process([key[1], child.name])])
 
                         elif nd.name != child.name:
-                            df_lst.append([nd.name, child.name, "neue zu " + str(round( dic.get(key),3))+" ähnlich zu "+ key[1]+" von " + trees_cl[sim_nodes_dics.index(dic)], find_process([key[1], child.name])])
+                            df_lst.append([key[0], child.name, "neue zu " + str(round( dic.get(key),3))+" ähnlich zu "+ key[1]+" von " + trees_cl[sim_nodes_dics.index(dic)], find_process([key[1], child.name])])
                     already_found.append(key[0])
     
       
