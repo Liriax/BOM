@@ -211,7 +211,7 @@ def download_func (n_clicks, tree_input, trees_cl,similarity_cl):
 
             children_nodes = nd.children
             for child in children_nodes:
-                if nd == tree or nd.name=='':
+                if nd == tree or nd.name=='' or nd.name in already_found:
                     continue
                 if nd.name != child.name: 
                     df_lst.append([nd.name, child.name, "identisch zu {} von {}".format(nc.name, nc.get_tree_root().name), find_process([nc.name, child.name])])
