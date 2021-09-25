@@ -62,7 +62,6 @@ class TreePair:
                     quantity = x[0].dist
                     quantity *= x[0].up.dist if x[0].up != node[0] else 1 # consider the case that the parent node appears x>1 times
                     node_dic[x[0].name]=(rel_hier_level,quantity) # (relative hierarchy level, quantity)
-
             t1_dic[node[0]]=node_dic
 
         for node in self.t2_inner_nodes:
@@ -84,7 +83,6 @@ class TreePair:
     
         '''fill the matrixes: the matrixes are dictionaries with inner node id as key and 
         a list of components as value (just like the matrixes on top left, page 8 of the paper)'''
-
         mat1={}
         for n in range(0, len(self.t1_inner_nodes)):
             mat1[n+1]=[1/t1_dic.get(self.t1_inner_nodes[n][0]).get(x)[0]*t1_dic.get(self.t1_inner_nodes[n][0]).get(x)[1] if x in [x.name for x in self.t1_inner_nodes[n][0].search_nodes()] else 0 for x in all_comp]
@@ -97,8 +95,6 @@ class TreePair:
         self.mat1=mat1
         self.mat2=mat2
 
-
-        
 
     '''identifies common nodes and subtrees, returns two lists of TreeNode objects'''
     def find_same_nodes(self):
@@ -127,6 +123,17 @@ class TreePair:
         dotprod = 0
         betrag_x = 0
         betrag_y = 0
+        d11=fm1[0]
+        d12=fm2[0]
+        # restrictions of Optiz coding system:
+        if (d11<3 and d12>=3):
+            return 1
+        if (d11<5 and d11>2):
+            if d12 <= 2 or d12>=5:
+                return 1
+        if (d11<9 and d11>5):
+            if d12 == 9 or d12 <= 5:
+                return 1
         for i in range(0,len(fm1)):
             x=int(fm1[i])
             y=int(fm2[i])
