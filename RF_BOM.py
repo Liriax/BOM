@@ -127,13 +127,13 @@ class TreePair:
         d12=fm2[0]
         # restrictions of Optiz coding system:
         if (d11<3 and d12>=3):
-            return 1
+            return 0
         if (d11<5 and d11>2):
             if d12 <= 2 or d12>=5:
-                return 1
+                return 0
         if (d11<9 and d11>5):
             if d12 == 9 or d12 <= 5:
-                return 1
+                return 0
         for i in range(0,len(fm1)):
             x=int(fm1[i])
             y=int(fm2[i])
