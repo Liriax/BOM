@@ -123,8 +123,10 @@ class TreePair:
         dotprod = 0
         betrag_x = 0
         betrag_y = 0
-        d11=fm1[0]
-        d12=fm2[0]
+        d11=int(fm1[0])
+        d12=int(fm2[0])
+        assert isinstance(d11,int), fm1
+        assert isinstance(d12,int), fm2
         # restrictions of Optiz coding system:
         if (d11<3 and d12>=3):
             return 0
