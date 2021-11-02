@@ -37,10 +37,11 @@ app.layout = html.Div(
                     options=options, value="FU114SA1"
                 )]),
             html.Div(children = [
-                dcc.Checklist(
+                dcc.Dropdown(
                     id = "trees_cl",
                     options=options,
-                    value=encodings[1:3]
+                    value=encodings[1:3],
+                    multi=True
                 )
                 ]),
             # html.Button(id="add_new_tree_button", n_clicks=None, children="Baum hinzufügen"),
@@ -170,8 +171,11 @@ def similar_nodes (n_clicks, tree_input, trees_cl, similarity_cl):
         sim_nodes_dics = tc.find_similar_nodes(consider_comp_similarity)
         for dic in sim_nodes_dics:
             for key in dic.keys():
-                if key[1] != trees_cl[sim_nodes_dics.index(dic)]:
-                    output.append(html.P("Baugruppe {} ist {} ähnlich zu Baugruppe {} der Produktvariante {}.".format(key[0],round( dic.get(key),3),key[1], trees_cl[sim_nodes_dics.index(dic)])))
+                if key[1].name != trees_cl[sim_nodes_dics.index(dic)]:
+                    if key[1].is_leaf():
+                        output.append(html.P("Bauteil {} ist {} ähnlich zu Bauteil {} der Produktvariante {}.".format(key[0].name,round( dic.get(key),3),key[1].name, trees_cl[sim_nodes_dics.index(dic)])))
+                    else:
+                        output.append(html.P("Baugruppe {} ist {} ähnlich zu Baugruppe {} der Produktvariante {}.".format(key[0].name,round( dic.get(key),3),key[1].name, trees_cl[sim_nodes_dics.index(dic)])))
     return output
 
 @app.callback(
@@ -222,27 +226,32 @@ def download_func (n_clicks, tree_input, trees_cl,similarity_cl):
         distances = tc.find_distances(consider_comp_similarity)
         sim_nodes_dics = tc.find_similar_nodes(consider_comp_similarity)
         for dic in sim_nodes_dics:
+            mapped_leaves = {pair[0]:pair[1] for pair in dic.keys() if pair[0].is_leaf()}
             for key in dic.keys():
                 # key[0] is the name of the node
                 # key[1] is the name of the similar node
-                if key[1] != trees_cl[sim_nodes_dics.index(dic)]:
-                    nd = tree.search_nodes(name=key[0])[0]
-                    if nd == tree or key[0]=='':
+                if key[1].name != trees_cl[sim_nodes_dics.index(dic)]:
+                    nd = key[0]
+                    # nd is the node
+                    if nd == tree or nd.name=='':
                         continue
                     children_nodes = nd.children
-                    other_children = [x.name for x in trees[sim_nodes_dics.index(dic)].search_nodes(name=key[1])[0].children]
+                    other_children = [x.name for x in key[1].children]
                     for child in children_nodes:
-                        if key[0] in already_found:
+                        if nd.name in already_found:
                             continue
                         if child.name in other_children:
-                            df_lst.append([key[0], child.name, "identisch zur ähnlichen "+ key[1]+" von " + trees_cl[sim_nodes_dics.index(dic)], find_process([key[1], child.name])])
+                            df_lst.append([nd.name, child.name, "identisch zur ähnlichen "+ key[1].name+" von " + trees_cl[sim_nodes_dics.index(dic)], find_process([key[1].name, child.name])])
 
                         elif nd.name != child.name:
-                            df_lst.append([key[0], child.name, "neue zu " + str(round( dic.get(key),3))+" ähnlich zu "+ key[1]+" von " + trees_cl[sim_nodes_dics.index(dic)], find_process([key[1], child.name])])
-                    already_found.append(key[0])
+                            df_lst.append([nd.name, child.name, "neue zu " + str(round( dic.get(key),3))+" ähnlich zu "+ key[1].name+" von " + trees_cl[sim_nodes_dics.index(dic)], find_process([key[1].name, child.name])])
+                            if child in mapped_leaves.keys():
+                                df_lst.append(["-", child.name, f"neue zu {str(round( dic.get((child,mapped_leaves[child])),3))} ähnlich zu {mapped_leaves[child].name} von {mapped_leaves[child].up.name} von {trees_cl[sim_nodes_dics.index(dic)]}", find_process([mapped_leaves[child].name, child.name])])
+
+                    already_found.append(nd.name)
     
       
-        df = pd.DataFrame(df_lst, index = range(0, len(df_lst)), columns=["Baugrupppe","Kinder","identisch/Ähnlichkeit","verknüpfte Prozesse [Station 1, Station 2, Station 3]"])
+        df = pd.DataFrame(df_lst, index = range(0, len(df_lst)), columns=["Baugrupppe","Kinder","identisch/ähnlich/neu","verknüpfter Prozessschritt [Station 1, Station 2, Station 3]"])
 
         return dcc.send_data_frame(df.to_excel, "ergebnisse_rf_bom.xlsx", sheet_name = "Ergebnisse")
     return None

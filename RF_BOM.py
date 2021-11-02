@@ -41,7 +41,8 @@ class TreePair:
         self.all_comp = all_comp
 
 
-        
+        self.t1_all_nodes = t1_all_nodes
+        self.t2_all_nodes = t2_all_nodes
 
         # all the inner nodes of tree 1 and tree 2
         self.t1_inner_nodes = [x for x in t1_all_nodes if x[0].is_leaf()==False]
@@ -94,6 +95,8 @@ class TreePair:
         self.t2_dic = t2_dic
         self.mat1=mat1
         self.mat2=mat2
+        self.sim_matrix = self.construct_sim_matrix()
+
 
 
     '''identifies common nodes and subtrees, returns two lists of TreeNode objects'''
@@ -263,7 +266,7 @@ class TreePair:
             T12 = [[self.cal_distance(i, j, map_1_to_2=True) for j in range(1, n_nodes_mat2+1)] for i in range(1, n_nodes_mat1+1)]
             T21 = [[self.cal_distance(j, i, map_1_to_2=False) for j in range(1, n_nodes_mat1+1)] for i in range(1, n_nodes_mat2+1)]
         else:
-            comp_similarity_matrix = self.construct_sim_matrix()
+            comp_similarity_matrix = self.sim_matrix
             T12 = [[self.cal_distance(i, j, True, True, comp_similarity_matrix) for j in range(1, n_nodes_mat2+1)] for i in range(1, n_nodes_mat1+1)]
             T21 = [[self.cal_distance(j, i, True, True, comp_similarity_matrix) for j in range(1, n_nodes_mat1+1)] for i in range(1, n_nodes_mat2+1)]
         
@@ -335,6 +338,16 @@ class TreePair:
             
         return RF_BOM_norm, node_matching_matrix1, node_matching_matrix2
 
+    def find_most_similar_leaf(self,child,node):
+        max_sim = -10**6
+        most_similar_leaf = None
+        for child in node:
+            if not child.is_leaf():
+                continue
+            self.cal_distance()
+
+
+
     '''returns a dictionary with tuples (i, j) as keys and rf-distance between node i of tree 1 and node j of tree 2 as values'''
     def find_sim_nodes(self, consider_comp_similarity=False ):
         t1=self.t1
@@ -344,25 +357,65 @@ class TreePair:
         nodes1=self.t1_inner_nodes
         nodes2=self.t2_inner_nodes
         tree_dist, nmm1, nmm2 = self.compute_rf_bom() if not consider_comp_similarity else self.compute_rf_bom(True)
-        mapped_nodes = list(set(nmm1).union(set(nmm2)))
+        mapped_nodes = []
         nodes_rf_boms = {}
-        for pair in mapped_nodes:
-            try:
-                n1 = nodes1[pair[0]-1][0]
-                n2 = nodes2[pair[1]-1][0]
-            except:
-                n1 = nodes1[pair[1]-1][0]
-                n2 = nodes2[pair[0]-1][0]
+        same_nodes_t1 = self.find_same_nodes()[0]
+        same_nodes_t2 = self.find_same_nodes()[1]
+        # for pair in nmm1:
+        #     n1 = nodes1[pair[0]-1][0]
+        #     n2 = nodes2[pair[1]-1][0]
+        #     mapped_nodes.append((n1,n2))
+        # for pair in nmm2:
+        #     n1 = nodes1[pair[1]-1][0]
+        #     n2 = nodes2[pair[0]-1][0]
+        #     mapped_nodes.append((n1,n2))
+        # mapped_nodes=list(set(mapped_nodes))
+        already_calculated=[]
+        for n1 in nodes1:
+            n1 = n1[0]
+            if n1.name =='':
+                continue
+            for n2 in nodes2:
+                n2 = n2[0]
+                if n2.name =="":
+                    continue
+                if n1.name == n2.name:
+                    continue
+                if n1 in same_nodes_t1 or n2 in same_nodes_t2:
+                    continue
+                if (n1.name,n2.name) in already_calculated or (n2.name,n1.name) in already_calculated:
+                    continue
+                tp = TreePair(n1,n2, self.sachn_formenschl)
+                rf_dist = tp.compute_rf_bom()[0] if not consider_comp_similarity else tp.compute_rf_bom(True)[0]
+                already_calculated.append((n1.name,n2.name))
+         
+        # for n1,n2 in mapped_nodes:
+        #     tp = TreePair(n1,n2, self.sachn_formenschl)
+        #     mat_n1=tp.mat1
+        #     mat_n2=tp.mat2
+        #     rf_dist = tp.compute_rf_bom()[0] if not consider_comp_similarity else tp.compute_rf_bom(True)[0]
+        #     n1_name = n1.name
+        #     n2_name = n2.name
 
-            tp = TreePair(n1,n2, self.sachn_formenschl)
-            mat_n1=tp.mat1
-            mat_n2=tp.mat2
-            rf_dist = tp.compute_rf_bom()[0] if not consider_comp_similarity else tp.compute_rf_bom(True)[0]
-            n1_name = n1.name
-            n2_name = n2.name
+                # assert rf_dist>=0 and rf_dist<=1, "wrong rf distance"
+                nodes_rf_boms[(n1, n2)]=rf_dist
+                new_leaves_n1 = [child for child in n1.children if child.is_leaf()]
+                new_leaves_n2 = [child for child in n2.children if child.is_leaf() and child.up not in same_nodes_t2]
+                for leaf1 in new_leaves_n1:
+                    ind1=self.all_comp.index(leaf1.name)
+                    max_sim = -10**6
+                    most_similar = None
+                    for leaf2 in new_leaves_n2:
+                        ind2=self.all_comp.index(leaf2.name)
+                        sim = self.sim_matrix[ind1][ind2]
+                        if sim > max_sim:
+                            max_sim = sim 
+                            most_similar = leaf2
+                    if most_similar is not None:
+                        nodes_rf_boms[(leaf1, most_similar)]=max_sim
 
-            if rf_dist>=0 and rf_dist<=1 and n1_name!= n2_name:
-                nodes_rf_boms[(n1_name, n2_name)]=rf_dist
+
+
         
 
         return dict(sorted(nodes_rf_boms.items(), key=lambda item: item[1] , reverse=True))
@@ -384,7 +437,7 @@ class TreeCompare:
     def find_similar_nodes(self,consider_comp_similarity=False ):
         similar_nodes = []
         for tree in self.trees:
-            tp = TreePair(self.t, tree, self.sachn_formenschl)
+            tp = TreePair(self.t, tree, self.sachn_formenschl)            
             sim_nodes = tp.find_sim_nodes(consider_comp_similarity  )
             similar_nodes.append(sim_nodes)
         return similar_nodes
