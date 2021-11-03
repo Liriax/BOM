@@ -244,9 +244,11 @@ def download_func (n_clicks, tree_input, trees_cl,similarity_cl):
                             df_lst.append([nd.name, child.name, "identisch zur ähnlichen "+ key[1].name+" von " + trees_cl[sim_nodes_dics.index(dic)], find_process([key[1].name, child.name])])
 
                         elif nd.name != child.name:
-                            df_lst.append([nd.name, child.name, "neue zu " + str(round( dic.get(key),3))+" ähnlich zu "+ key[1].name+" von " + trees_cl[sim_nodes_dics.index(dic)], find_process([key[1].name, child.name])])
+                            to_append = [nd.name, child.name, "neu zu " + str(round( dic.get(key),3))+" ähnlich zu "+ key[1].name+" von " + trees_cl[sim_nodes_dics.index(dic)], find_process([key[1].name, child.name])]
                             if child in mapped_leaves.keys():
-                                df_lst.append(["-", child.name, f"neue zu {str(round( dic.get((child,mapped_leaves[child])),3))} ähnlich zu {mapped_leaves[child].name} von {mapped_leaves[child].up.name} von {trees_cl[sim_nodes_dics.index(dic)]}", find_process([mapped_leaves[child].name, child.name])])
+                                to_append=[nd.name, child.name, f"neu zu {str(round( dic.get(key),3))} ähnlich zu {key[1].name} von {trees_cl[sim_nodes_dics.index(dic)]}; \n{str(round( dic.get((child,mapped_leaves[child])),3))} ähnlich zu {mapped_leaves[child].name} von {mapped_leaves[child].up.name})", find_process([mapped_leaves[child].name, child.name])]
+                            df_lst.append(to_append)
+
 
                     already_found.append(nd.name)
     
